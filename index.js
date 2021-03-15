@@ -29,4 +29,30 @@ const { abi, evm } = HelloWorld;
 
 const contract = new web3.eth.Contract(abi);
 
-console.log(contract);
+const deployAndRunContract = async () => {
+  const addresses = await web3.eth.getAccounts();
+  const gasPrice = await web3.eth.getGasPrice();
+
+  contract.deploy({
+    data: evm.bytecode.object
+  })
+  .send({
+    from: addresses[0],
+    gas: 1000000,
+    gasPrice,
+  })
+  .on('confirmation', async (confNumber, receipt) => {
+    const { contractAddress } = receipt;
+    console.log("Deployed at", contractAddress);
+
+    const contractInstance = new web3.eth.Contract(abi, contractAddress);
+
+    const myName = await contractInstance.methods.getMyName().call();
+    console.log("Result from blockchain:", myName);
+  })
+  .on('error', (err) => {
+    console.log("Failed to deploy:", error);
+  })
+}
+
+deployAndRunContract();
